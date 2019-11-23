@@ -32,6 +32,11 @@ var imagenes = {
     mensaje_como_jugar : "res/mensaje_como_jugar.png",
     mensaje_ganar : "res/mensaje_ganar.png",
     mensaje_perder : "res/mensaje_perder.png",
+    plataforma_salto : "res/plataforma_salto.png",
+    punto_salvado: "res/moneda.png",
+    animacion_recolectable:"res/recolectable.png",
+    recolectable: "res/icono_recolectable.png",
+
 
 };
 

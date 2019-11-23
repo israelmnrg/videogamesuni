@@ -38,7 +38,9 @@ class Jugador extends Modelo {
         this.tiempoDisparo = 0;
     }
 
-
+    getX(){
+        return this.x;
+    }
 
 
     actualizar() {
@@ -135,9 +137,12 @@ class Jugador extends Modelo {
         this.animacion.dibujar(this.x-scrollX, this.y);
     }
 
-    saltar(){
+    saltar(p){
+        if(p==null){
+            p=1;
+        }
         if ( !this.enElAire) {
-            this.vy = -16;
+            this.vy = -16*p;
             this.enElAire = true;
         }
 

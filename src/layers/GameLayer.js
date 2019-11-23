@@ -2,11 +2,11 @@ class GameLayer extends Layer {
 
     constructor() {
         super();
-        this.mensaje = new Boton(imagenes.mensaje_como_jugar, 480 / 2, 320 / 2);
-        this.pausa = true;
+//        this.mensaje = new Boton(imagenes.mensaje_como_jugar, 480 / 2, 320 / 2);
+//        this.pausa = true;
+        this.posDefecto='1';
+        this.posGuardado='A';
         this.iniciar();
-
-
     }
 
     iniciar() {
@@ -26,16 +26,29 @@ class GameLayer extends Layer {
         this.fondoPuntos =
             new Fondo(imagenes.icono_puntos, 480 * 0.85, 320 * 0.05);
 
-        this.puntos = new Texto(0, 480 * 0.9, 320 * 0.07);
+        this.fondoRecolectable= new Fondo(imagenes.recolectable,480*0.2,320*0.08);
+
+        this.puntos = new Texto(0, 480 * 0.8, 320 * 0.07);
+
+        this.ptoRecolectable= new Texto(0,480*0.13,320*0.08)
 
         //this.jugador = new Jugador(50,50);
         this.fondo = new Fondo(imagenes.fondo_2, 480 * 0.5, 320 * 0.5);
+        this.destruibles=[];
+        this.destruibles2=[];
+        this.puntoGuardados=[];
+        this.plataforma=[];
+        this.recolectables=[];
+
 
         this.enemigos = [];
+
         //this.enemigos.push(new Enemigo(300,50));
         //this.enemigos.push(new Enemigo(350,200));
         this.cargarMapa("res/" + nivelActual + ".txt");
         this.disparosJugador = []
+
+
 
     }
 
@@ -90,6 +103,41 @@ class GameLayer extends Layer {
                 this.bloques.push(bloque);
                 this.espacio.agregarCuerpoEstatico(bloque);
                 break;
+            case "Y":
+                var p = new PlataformaSalto(x,y);
+                p.y = p.y - p.alto/2;
+                this.plataforma.push(p);
+                this.espacio.agregarCuerpoEstatico(p);
+                break;
+            case this.posDefecto:
+                this.jugador = new Jugador(x,y);
+                this.jugador.y = this.jugador.y-this.jugador.alto/2;
+                this.espacio.agregarCuerpoDinamico(this.jugador);
+                break;
+            case this.posGuardado:
+                var pGuardado=new Salvado(x,y);
+                pGuardado.y = pGuardado.y-pGuardado.alto/2;
+                this.puntoGuardados.push(pGuardado);
+                this.espacio.agregarCuerpoDinamico(pGuardado);
+                break;
+            case "W":
+                var b = new BloqueDestruible(x,y);
+                b.y = b.y - b.alto/2;
+                this.destruibles.push(b);
+                this.espacio.agregarCuerpoEstatico(b);
+                break;
+            case "R":
+                var recolectable = new Recolectable( x,y);
+                recolectable.y = recolectable.y - recolectable.alto/2;
+                this.recolectables.push(recolectable);
+                this.espacio.agregarCuerpoDinamico(recolectable);
+                break;
+            case "U":
+                var b = new BloqueDestruible2(x,y);
+                b.y = b.y - b.alto/2;
+                this.destruibles2.push(b);
+                this.espacio.agregarCuerpoEstatico(b);
+                break;
 
         }
     }
@@ -103,12 +151,12 @@ class GameLayer extends Layer {
 
         if (this.copa.colisiona(this.jugador)) {
             nivelActual++;
-            if (nivelActual > nivelMaximo) {
+            if (nivelActual > nivelMaximo){
                 nivelActual = 0;
             }
-            this.pausa = true;
-            this.mensaje =
-                new Boton(imagenes.mensaje_ganar, 480/2, 320/2);
+            //this.pausa = true;
+           // this.mensaje =
+            //    new Boton(imagenes.mensaje_ganar, 480/2, 320/2);
 
             this.iniciar();
         }
@@ -157,6 +205,12 @@ class GameLayer extends Layer {
             this.enemigos[i].actualizar();
         }
 
+        for (var i=0; i < this.recolectables.length; i++) {
+            this.recolectables[i].actualizar();
+        }
+
+
+
 
         //colisiones
         for (var i = 0; i < this.enemigos.length; i++) {
@@ -198,6 +252,65 @@ class GameLayer extends Layer {
             }
         }
 
+        //Colision jugador - plataformaSalto
+        for(var i=0;i<this.plataforma.length;i++){
+            if (this.plataforma[i] != null && this.jugador.colisiona(this.plataforma[i])){
+                this.jugador.saltar(1.4);
+            }
+        }
+
+        //Colision jugador - punto salvado
+        for(var i=0;i<this.puntoGuardados.length;i++){
+            if (this.puntoGuardados[i] != null && this.jugador.colisiona(this.puntoGuardados[i])){
+                this.posDefecto=this.posGuardado;
+                this.posGuardado="W";
+                this.espacio.eliminarCuerpoDinamico(this.puntoGuardados[i]);
+                this.puntoGuardados.splice(i,1);
+            }
+        }
+
+        //Jugador encima bloque destruible
+        if(this.iteracionesD==null){
+            this.iteracionesD =1;
+        }
+        for(var i=0;i<this.destruibles.length;i++){
+            if ( (this.jugador.getX()/this.destruibles[i].getX()>0.96 && this.jugador.getX()/this.destruibles[i].getX()<1.08)){
+                this.iteracionesD ++;
+                console.log(this.iteracionesD)
+                if(this.iteracionesD >70){
+                    this.espacio.eliminarCuerpoEstatico(this.destruibles[i]);
+                    this.destruibles.splice(i,1);
+                    this.iteracionesD =0;
+                }
+            }
+        }
+
+        //Colision disparoJugador-Bloque
+        for (var i = 0; i < this.disparosJugador.length; i++) {
+            for (var j = 0; j < this.destruibles2.length; j++) {
+                if (this.disparosJugador[i] != null &&
+                    this.destruibles2[j] != null &&
+                    this.disparosJugador[i].colisiona(this.destruibles2[j])) {
+                    this.espacio
+                        .eliminarCuerpoDinamico(this.disparosJugador[i]);
+                    this.espacio.eliminarCuerpoEstatico(this.destruibles2[j]);
+                    this.disparosJugador.splice(i, 1);
+                    i = i - 1;
+                    this.destruibles2.splice(i,1);
+                }
+            }
+        }
+
+        //Colision jugador - recolectable
+        for(var i=0;i<this.recolectables.length;i++){
+            if (this.recolectables[i] != null && this.jugador.colisiona(this.recolectables[i])){
+                this.espacio.eliminarCuerpoDinamico(this.recolectables[i]);
+                this.recolectables.splice(i,1);
+                this.ptoRecolectable.valor++;
+            }
+        }
+
+
     }
 
     calcularScroll() {
@@ -213,6 +326,8 @@ class GameLayer extends Layer {
                 this.scrollX = this.jugador.x - 480 * 0.7;
             }
         }
+
+
 
     }
 
@@ -234,8 +349,34 @@ class GameLayer extends Layer {
             this.enemigos[i].dibujar(this.scrollX);
         }
 
+        for (var i=0; i < this.plataforma.length; i++){
+            this.plataforma[i].dibujar(this.scrollX);
+
+        }
+
+        for (var i=0; i < this.puntoGuardados.length; i++){
+            this.puntoGuardados[i].dibujar(this.scrollX);
+        }
+
+        for (var i=0; i < this.destruibles.length; i++){
+            this.destruibles[i].dibujar(this.scrollX);
+
+        }
+
+        for (var i=0; i < this.destruibles2.length; i++){
+            this.destruibles2[i].dibujar(this.scrollX);
+
+        }
+
+        for (var i=0; i < this.recolectables.length; i++){
+            this.recolectables[i].dibujar(this.scrollX);
+        }
+
         this.jugador.dibujar(this.scrollX);
         this.fondoPuntos.dibujar();
+        this.fondoRecolectable.dibujar();
+        this.ptoRecolectable.dibujar();
+
         this.botonDisparo.dibujar();
         this.botonSalto.dibujar();
         this.pad.dibujar();
